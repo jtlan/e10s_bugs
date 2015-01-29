@@ -22,6 +22,7 @@ d3.json('data/bug-data.json', function(err, data) {
        }
        return 1;
     });
+    document.querySelector("#bugCount").textContent = bugs.length;
     var reporterByDate = (function() {
         var creators = {};
         var c_count = 0;

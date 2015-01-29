@@ -33,6 +33,16 @@
         </style>
     </head>
     <body>
+        <h2>e10s bugs, the query</h2>
+        <p>Below are a few graphs of e10s bugs over time, for a particular 
+        snapshot of the data. The query finds all bugs, that either
+        <ul>
+            <li>block a bug with <code>e10s</code> in its alias, or</li>
+            <li>have a <code>tracking_e10s</code> flag that's none of 
+            <code>?</code>, <code>-</code> or <code>---</code></li>
+        </ul>
+        That's a total of <span id="bugcount">?</span> bugs.
+        </p>
         <h2>Reporters</h2>
         <p>Unique reporters over time, and per week.</p>
         <svg id="reporterChart" width="1000" height="480"></svg>
