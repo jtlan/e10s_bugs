@@ -1,0 +1,43 @@
+<!DOCTYPE <!DOCTYPE html>
+<html>
+    <head>
+        <title>e10s bugs (snapshot)</title>
+        <link rel="stylesheet" type="text/css" href="bower_components/plottable/plottable.css" />
+        <script src="bower_components/d3/d3.min.js" charset="utf-8"></script>
+        <script src="bower_components/plottable/plottable.js" charset="utf-8"></script>
+        <style>
+.axis {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.bugLegend {
+  position: absolute;
+  right: 0;
+  bottom: 40;
+  width: 150px;
+}
+.bugChart {
+  position: relative;
+}
+        </style>
+    </head>
+    <body>
+        <h2>Reporters</h2>
+        <p>Unique reporters over time, and per week.</p>
+        <svg id="reporterChart" width="1000" height="480"></svg>
+        <h2>Bugs per week</h2>
+        <p>Bugs reported per week, sliced per e10s trackage and resolution.</p>
+        <script type="text/javascript" src="javascript/app.js"></script>
+    </body>
+</html>
