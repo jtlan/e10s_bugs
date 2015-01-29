@@ -3,7 +3,7 @@
 var e10s_start = new Date(2014,02,11);
 var bugs, plots, newbugs, bugsOfTheWeek, trackingvals;
 var weeklyDetails;
-var RESOLUTIONS = ["", "FIXED", "DUPLICATE", "WONTFIX", "INVALID", "WORKSFORME", "INCOMPLETE"];
+var RESOLUTIONS = ["INCOMPLETE", "WORKSFORME", "INVALID", "WONTFIX", "DUPLICATE", "FIXED", ""];
 d3.json('data/bug-data.json', function(err, data) {
     bugs = [];
     var bug, stoneset = d3.set();
@@ -74,7 +74,7 @@ d3.json('data/bug-data.json', function(err, data) {
     });
     makeBugChart(RESOLUTIONS, function(bug) {
         return bug.resolution;
-    });
+    }, 5);
 });
 
 function makeReporterChart() {
@@ -114,7 +114,7 @@ function makeReporterChart() {
     chart.renderTo("#reporterChart");
 }
 
-function detailsForWeek(d, valuelist, accessor) {
+function detailsForWeek(d, valuelist, accessor, below_the_fold) {
     var details = [];
     var detail_proto = {
         start: d.start,
@@ -128,7 +128,14 @@ function detailsForWeek(d, valuelist, accessor) {
         matrix.get(accessor(bug)).total++;
     });
     var offset = 0;
-    valuelist.forEach(function(label) {
+    valuelist.forEach(function(label, i) {
+        if (below_the_fold && i == below_the_fold) {
+            // move the details up to here below the fold
+            details.forEach(function(detail) {
+               detail.offset -= offset;
+            });
+            offset = 0;
+        }
         var total = matrix.get(label).total;
         if (!total) {
             // nothing to do, skip
@@ -144,10 +151,10 @@ function detailsForWeek(d, valuelist, accessor) {
     return details;
 }
 
-function makeBugChart(valuelist, accessor) {
+function makeBugChart(valuelist, accessor, below_the_fold) {
     weeklyDetails = [];
     bugsOfTheWeek.forEach(function(d) {
-        weeklyDetails = weeklyDetails.concat(detailsForWeek(d, valuelist, accessor));
+        weeklyDetails = weeklyDetails.concat(detailsForWeek(d, valuelist, accessor,  below_the_fold));
     });
     
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
@@ -163,7 +170,8 @@ var x = d3.time.scale()
     .nice();
 var y = d3.scale.linear()
     .range([height, 0])
-    .domain([0, d3.max(weeklyDetails, function(d) {return d.total + d.offset})]);
+    .domain([d3.min(weeklyDetails, function(d) {return d.offset}),
+            d3.max(weeklyDetails, function(d) {return d.total + d.offset})]);
 var color = d3.scale.category20();
 valuelist.forEach(function(label) {
     color(label);
