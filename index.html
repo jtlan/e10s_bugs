@@ -34,11 +34,11 @@
     </head>
     <body>
         <h2>e10s bugs, the query</h2>
-        <p>Below are a few graphs of e10s bugs over time, for a particular 
+        <p>Below are a few graphs of e10s bugs over time, for a particular
         snapshot of the data. The query finds all bugs, that either
         <ul>
             <li>block a bug with <code>e10s</code> in its alias, or</li>
-            <li>have a <code>tracking_e10s</code> flag that's none of 
+            <li>have a <code>tracking_e10s</code> flag that's none of
             <code>?</code>, <code>-</code> or <code>---</code></li>
         </ul>
         That's a total of <span id="bugcount">?</span> bugs.
@@ -49,5 +49,11 @@
         <h2>Bugs per week</h2>
         <p>Bugs reported per week, sliced per e10s trackage and resolution.</p>
         <script type="text/javascript" src="javascript/app.js"></script>
+        <div class="bugchart">
+          <svg id="bugs-trackage" width="1110" height="500"></svg>
+        </div>
+        <div class="bugchart">
+          <svg id="bugs-resolution" width="1110" height="500"></svg>
+        </div>
     </body>
 </html>

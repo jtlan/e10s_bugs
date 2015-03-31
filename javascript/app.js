@@ -38,7 +38,7 @@ d3.json('data/bug-data.json', function(err, data) {
             d.reporters = c_count;
         }
         return _rpbd;
-        
+
     })();
     bugs.forEach(reporterByDate);
     newbugs = bugs.filter(function(b){return b.creation_time > e10s_start});
@@ -70,10 +70,11 @@ d3.json('data/bug-data.json', function(err, data) {
     trackingvals.splice(0, 0, '-', '---', '?', '+');
     trackingvals.push('later');
     makeReporterChart();
-    makeBugChart(trackingvals, function(bug) {
+
+    makeBugChartPlottable(d3.select("#bugs-trackage"), trackingvals, function(bug) {
         return bug.cf_tracking_e10s||'---';
     });
-    makeBugChart(RESOLUTIONS, function(bug) {
+    makeBugChartPlottable(d3.select("#bugs-resolution"), RESOLUTIONS, function(bug) {
         return bug.resolution;
     }, 5);
 });
@@ -84,7 +85,7 @@ function makeReporterChart() {
     var xAxis = new Plottable.Axis.Time(xScale, "bottom");
     var yTotalAxis = new Plottable.Axis.Numeric(yTotalScale, "left");
     var colorScale = new Plottable.Scale.Color();
-    
+
     var totalplot = new Plottable.Plot.Line(xScale, yTotalScale);
     totalplot.addDataset(newbugs);
     function getXDataValue(d) {
@@ -114,6 +115,72 @@ function makeReporterChart() {
     ]);
     chart.renderTo("#reporterChart");
 }
+
+function makeBugChartPlottable(svg, valuelist, accessor, below_the_fold) {
+    weeklyDetails = [];
+    bugsOfTheWeek.forEach(function(d) {
+        weeklyDetails = weeklyDetails.concat(detailsForWeek(d, valuelist, accessor, below_the_fold));
+    });
+    var xScale = new Plottable.Scale.Time();
+    var yScale = new Plottable.Scale.Linear();
+    var colorScale = new Plottable.Scale.Color("20");
+    var xAxis = new Plottable.Axis.Time(xScale, "bottom");
+    var yAxis = new Plottable.Axis.Numeric(yScale, "left");
+    yAxis.formatter(function(d) { return String(Math.abs(d)); });
+
+    var bars = new Plottable.Plot.StackedBar(xScale, yScale, true);
+    bars.barAlignment("left");
+
+    var label2Data = {};
+    valuelist.forEach(function(label) {
+        label2Data[label] = [];
+    });
+    weeklyDetails.forEach(function(detail) {
+        label2Data[detail.label].push(detail);
+    });
+
+    below_the_fold = below_the_fold || 0;
+    var legendOrder = [];
+    // below the fold
+    for(var i = below_the_fold - 1; i >= 0; i--) {
+        var label = valuelist[i];
+        bars.addDataset(label, label2Data[label]);
+        legendOrder.push(label);
+    }
+    // above the fold
+    for(var i = below_the_fold; i < valuelist.length; i++) {
+        var label = valuelist[i];
+        bars.addDataset(label, label2Data[label]);
+        legendOrder.unshift(label);
+    }
+
+    var legend = new Plottable.Component.Legend(colorScale);
+    legend.sortFunction(function(a, b) {
+        return legendOrder.indexOf(a) - legendOrder.indexOf(b);
+    });
+    legend.yAlign("center");
+
+    bars.project("x", "start", xScale);
+    bars.project("width", function(d) { return xScale.scale(d.end) - xScale.scale(d.start); });
+    bars.project("y", function(d, i, u, p) {
+        if (valuelist.indexOf(p.datasetKey) < below_the_fold) {
+            return -d.total;
+        } else {
+            return d.total;
+        }
+    }, yScale);
+    bars.project("fill", function(d, i, u, p) { return p.datasetKey; } , colorScale);
+
+    var center = new Plottable.Component.Group([bars, legend]);
+
+    var chart = new Plottable.Component.Table([
+        [yAxis, bars , legend],
+        [null,  xAxis, null  ]
+    ]);
+
+    chart.renderTo(svg);
+}
+
 
 function detailsForWeek(d, valuelist, accessor, below_the_fold) {
     var details = [];
@@ -150,96 +217,4 @@ function detailsForWeek(d, valuelist, accessor, below_the_fold) {
         details.push(detail);
     });
     return details;
-}
-
-function makeBugChart(valuelist, accessor, below_the_fold) {
-    weeklyDetails = [];
-    bugsOfTheWeek.forEach(function(d) {
-        weeklyDetails = weeklyDetails.concat(detailsForWeek(d, valuelist, accessor,  below_the_fold));
-    });
-    
-var margin = {top: 20, right: 20, bottom: 30, left: 40},
-    width = 960 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
-
-var x = d3.time.scale()
-    .range([0, width])
-    .domain([
-        d3.time.week.floor(bugsOfTheWeek[0].bugs[0].creation_time),
-        d3.time.week.ceil(bugsOfTheWeek[bugsOfTheWeek.length-1].bugs[0].creation_time)
-    ])
-    .nice();
-var y = d3.scale.linear()
-    .range([height, 0])
-    .domain([d3.min(weeklyDetails, function(d) {return d.offset}),
-            d3.max(weeklyDetails, function(d) {return d.total + d.offset})]);
-var color = d3.scale.category20();
-valuelist.forEach(function(label) {
-    color(label);
-});
-
-var xAxis = d3.svg.axis()
-    .scale(x)
-    .orient("bottom");
-
-var yAxis = d3.svg.axis()
-    .scale(y)
-    .orient("left");
-var container = d3.select('body').append("div").attr("class", "bugChart");
-var svg = container.append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-  svg.append("g")
-      .attr("class", "x axis")
-      .attr("transform", "translate(0," + height + ")")
-      .call(xAxis);
-
-  svg.append("g")
-      .attr("class", "y axis")
-      .call(yAxis);
-
-  var barwidth = x(bugsOfTheWeek[0].end) - x(bugsOfTheWeek[0].start);
-  svg.selectAll(".bar")
-      .data(weeklyDetails)
-    .enter().append("rect")
-      .attr("class", "bar")
-      .attr("x", function(d) {
-          return x(d.start);
-      })
-      .attr("width", barwidth)
-      .attr("y", function(d) {
-          return y(d.total + d.offset);
-      })
-      .attr("height", function(d) {
-          return y(d.offset) - y(d.total + d.offset);
-      })
-      .style("fill", function(d) { return color(d.label); });
-
-var box = 25;
-svg = container.append("div").attr("class", "bugLegend").append("svg");
-x = d3.scale.ordinal()
-    .rangeRoundBands([0, box*valuelist.length], 0.1);
-x.domain(valuelist.concat([]).reverse());
-svg.attr("height", x.rangeExtent()[1]);
-svg.attr("width", 150);
-xAxis = d3.svg.axis()
-    .scale(x)
-    .orient("right");
-svg.selectAll(".block")
-    .data(valuelist)
-        .enter().append("rect")
-        .attr("class", "block")
-        .attr("width", box). attr("height", box)
-        .attr("y", function(d) {
-            return x(d);
-        })
-        .attr("title", function(d) {return d;})
-        .attr("x", 0)
-        .attr("fill", function(d) {return color(d)});
-  svg.append("g")
-      .attr("class", "x axis")
-      .attr("transform", "translate(" + box + ", 0)")
-      .call(xAxis);
 }
